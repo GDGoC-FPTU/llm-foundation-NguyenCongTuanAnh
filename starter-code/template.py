@@ -71,41 +71,47 @@ def call_openai(
 # ---------------------------------------------------------------------------
 # Task 2 — Call Google Gemini 2.5 (Standard Practical Model)
 # ---------------------------------------------------------------------------
-def call_openai(
+def call_gemini(
     prompt: str,
-    model: str = OPENAI_MODEL,
+    model: str = GEMINI_MODEL,
     temperature: float = 0.7,
+    top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
 
-    import time
-    import os
-    from openai import OpenAI
-
-    api_key = os.getenv("OPENAI_API_KEY") or "mock-key"
+    api_key = (
+        os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+        or "mock-key"
+    )
 
     start_time = time.time()
 
     try:
-        client = OpenAI(api_key=api_key)
+        from google import genai
+        from google.genai import types
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+        client = genai.Client(api_key=api_key)
+
+        config = types.GenerateContentConfig(
             temperature=temperature,
-            max_tokens=max_tokens,
+            top_p=top_p,
+            max_output_tokens=max_tokens,
+        )
+
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=config
         )
 
         latency = time.time() - start_time
 
-        text = response.choices[0].message.content
+        text = response.text
 
         usage = {
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
+            "input_tokens": response.usage_metadata.prompt_token_count,
+            "output_tokens": response.usage_metadata.candidates_token_count,
         }
 
         return text, latency, usage
@@ -114,14 +120,14 @@ def call_openai(
         latency = time.time() - start_time
 
         return (
-            "Mock OpenAI response",
+            "Mock Gemini response",
             latency,
             {
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
             },
         )
+
 # ---------------------------------------------------------------------------
 # Task 3 — Call Anthropic Claude (Exploratory track)
 # ---------------------------------------------------------------------------
