@@ -12,6 +12,7 @@ Instructions:
 import os
 import time
 from typing import Any, Callable
+from urllib import response
 
 # ---------------------------------------------------------------------------
 # Estimated costs per 1M INPUT & OUTPUT tokens (USD) as of March 2026
@@ -43,30 +44,27 @@ def call_openai(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    """
-    Call the OpenAI Chat Completions API and return the response text, latency,
-    and token usage stats.
+   def call_openai(
+    prompt: str,
+    model: str = OPENAI_MODEL,
+    temperature: float = 0.7,
+    top_p: float = 0.9,
+    max_tokens: int = 256,
+) -> tuple[str, float, dict]:
+    from openai import OpenAI
 
-    Args:
-        prompt:      The user message to send.
-        model:       The OpenAI model to use (default: gpt-4o).
-        temperature: Sampling temperature (0.0 – 2.0).
-        top_p:       Nucleus sampling threshold.
-        max_tokens:  Maximum number of tokens to generate.
-
-    Returns:
-        A tuple of:
-            - response_text (str)
-            - latency_seconds (float)
-            - usage (dict with keys: 'input_tokens', 'output_tokens')
-
-    Hint:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # response.usage contains input_tokens and output_tokens (prompt_tokens/completion_tokens)
-    """
-    # TODO: Import OpenAI, instantiate client, call chat.completions.create with parameters,
-    #       measure execution start/end time, extract text and token usage, and return them.
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        api_key = input("mock")
+    client = OpenAI(api_key=api_key)
+    start_time = time.time()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=temperature,
+        top_p=top_p,
+        max_tokens=max_tokens,
+    )
     raise NotImplementedError("Implement call_openai")
 
 
@@ -115,6 +113,24 @@ def call_gemini(
     """
     # TODO: Initialize Gemini client, set config parameters, call generate_content,
     #       measure latency, extract response text and usage metadata, and return the tuple.
+    api_key = os.getenv("GEMINI_API_KEY") or  os.getenv("GOOGLE_API_KEY") or  "mock-key"
+    start_time = time.time()
+    try :
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=api_key)
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            top_p=top_p,
+            max_output_tokens=max_tokens,
+        )
+        response = client.models.generate_content(
+      model=model,
+      contents=prompt,
+      config=config
+  )
+        input_tokens = response.usage_metadata.prompt_token_count
+        output_tokens = response.usage_metadata.candidates_token_count
     raise NotImplementedError("Implement call_gemini")
 
 
