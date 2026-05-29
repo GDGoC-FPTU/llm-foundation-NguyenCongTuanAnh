@@ -44,29 +44,38 @@ def call_openai(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-   def call_openai(
-    prompt: str,
-    model: str = OPENAI_MODEL,
-    temperature: float = 0.7,
-    top_p: float = 0.9,
-    max_tokens: int = 256,
-) -> tuple[str, float, dict]:
+
+    import os
+    import time
     from openai import OpenAI
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        api_key = input("mock")
+    api_key = os.getenv("OPENAI_API_KEY") or "mock-key"
+
     client = OpenAI(api_key=api_key)
+
     start_time = time.time()
+
     response = client.chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
         temperature=temperature,
         top_p=top_p,
         max_tokens=max_tokens,
     )
-    raise NotImplementedError("Implement call_openai")
 
+    latency = time.time() - start_time
+
+    text = response.choices[0].message.content
+
+    usage = {
+        "prompt_tokens": response.usage.prompt_tokens,
+        "completion_tokens": response.usage.completion_tokens,
+        "total_tokens": response.usage.total_tokens,
+    }
+
+    return text, latency, usage
 
 # ---------------------------------------------------------------------------
 # Task 2 — Call Google Gemini 2.5 (Standard Practical Model)
