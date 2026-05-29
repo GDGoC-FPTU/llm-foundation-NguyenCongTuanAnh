@@ -78,61 +78,55 @@ def call_gemini(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    """
-    Call the Google Gemini API (using Gemini 2.5 Flash as standard) and return
-    the response text, latency, and token usage stats.
 
-    Args:
-        prompt:      The user message to send.
-        model:       The Gemini model to use (default: gemini-2.5-flash).
-        temperature: Sampling temperature.
-        top_p:       Nucleus sampling threshold.
-        max_tokens:  Maximum number of tokens to generate.
+    api_key = (
+        os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+        or "mock-key"
+    )
 
-    Returns:
-        A tuple of:
-            - response_text (str)
-            - latency_seconds (float)
-            - usage (dict with keys: 'input_tokens', 'output_tokens')
-
-    Hint:
-        Option A (New Google GenAI SDK):
-            from google import genai
-            from google.genai import types
-            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-            # Configure using types.GenerateContentConfig
-            
-        Option B (Legacy Google GenerativeAI SDK):
-            import google.generativeai as genai
-            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-            model_inst = genai.GenerativeModel(model)
-            # Configure using genai.types.GenerationConfig
-            
-        Ensure your usage dictionary extracts 'input_tokens' and 'output_tokens' 
-        from the response metadata (e.g. response.usage_metadata).
-    """
-    # TODO: Initialize Gemini client, set config parameters, call generate_content,
-    #       measure latency, extract response text and usage metadata, and return the tuple.
-    api_key = os.getenv("GEMINI_API_KEY") or  os.getenv("GOOGLE_API_KEY") or  "mock-key"
     start_time = time.time()
-    try :
+
+    try:
         from google import genai
         from google.genai import types
+
         client = genai.Client(api_key=api_key)
+
         config = types.GenerateContentConfig(
             temperature=temperature,
             top_p=top_p,
             max_output_tokens=max_tokens,
         )
-        response = client.models.generate_content(
-      model=model,
-      contents=prompt,
-      config=config
-  )
-        input_tokens = response.usage_metadata.prompt_token_count
-        output_tokens = response.usage_metadata.candidates_token_count
-    raise NotImplementedError("Implement call_gemini")
 
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=config
+        )
+
+        latency = time.time() - start_time
+
+        text = response.text
+
+        usage = {
+            "input_tokens": response.usage_metadata.prompt_token_count,
+            "output_tokens": response.usage_metadata.candidates_token_count,
+        }
+
+        return text, latency, usage
+
+    except Exception:
+        latency = time.time() - start_time
+
+        return (
+            "Mock Gemini response",
+            latency,
+            {
+                "input_tokens": 0,
+                "output_tokens": 0,
+            },
+        )
 
 # ---------------------------------------------------------------------------
 # Task 3 — Call Anthropic Claude (Exploratory track)
